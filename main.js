@@ -2,14 +2,9 @@ import "./style.css";
 
 const canvas = document.querySelector("canvas");
 const context = canvas.getContext("2d");
-
-const collided = () => {
-  return x <= -1 || y <= -1 || x >= canvas.width || y >= canvas.width;
-};
-
-const foodCollided = () => {
-  return x === foodX && y === foodY;
-};
+addEventListener("keydown", (e) => direction.update(e));
+let counter = 0;
+let lastTime = 0;
 
 const random = () => {
   const numbers = [];
@@ -20,40 +15,122 @@ const random = () => {
   return numbers[Math.floor(Math.random() * numbers.length)];
 };
 
-let x = 0;
-let y = 0;
-let speed = 10;
-let direction = "ArrowRight";
-let foodX = random();
-let foodY = random();
-
-const reinit = () => {
-  x = 0;
-  y = 0;
-  direction = "ArrowRight";
-  update();
+const food = {
+  x: random(),
+  y: random(),
 };
 
-addEventListener("keydown", (event) => {
-  direction = event.code;
-});
+const snake = {
+  body: [
+    { x: 20, y: 0 }, // head
+    { x: 10, y: 0 }, // middle body
+    { x: 0, y: 0 }, // tail
+  ],
+
+  tail() {
+    return this.body[this.body.length - 1];
+  },
+
+  head() {
+    return this.body[0];
+  },
+
+  push() {
+    this.body.shift({ x: this.tail().x - 10, y: this.tail().y });
+  },
+
+  reset() {
+    this.body = [];
+  },
+};
+
+const drawSnake = () => {
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  snake.body.forEach((body) => {
+    context.fillStyle = "#7FFF00";
+    context.fillRect(body.x, body.y, 10, 10);
+  });
+};
+
+const drawFood = () => {
+  context.fillStyle = "snow";
+  context.fillRect(food.x, food.y, 10, 10);
+};
 
 const draw = () => {
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = "#7FFF00";
-  context.fillRect(x, y, 10, 10);
-
+  drawSnake();
+  drawFood();
   if (foodCollided()) {
-    foodX = random();
-    foodY = random();
+    snake.push();
+    food.x = random();
+    food.y = random();
   }
-
-  context.fillStyle = "snow";
-  context.fillRect(foodX, foodY, 10, 10);
 };
 
-let counter = 0;
-let lastTime = 0;
+const boundaryCollided = () => {
+  return (
+    snake.head().x <= -1 ||
+    snake.head().y <= -1 ||
+    snake.head().x >= canvas.width ||
+    snake.head().y >= canvas.width
+  );
+};
+
+const foodCollided = () => {
+  return snake.head().x === food.x && snake.head().y === food.y;
+};
+
+let direction = {
+  current: "ArrowRight",
+  right: "ArrowRight",
+  left: "ArrowLeft",
+  up: "ArrowUp",
+  down: "ArrowDown",
+  update(e) {
+    if (e.code === this.left && this.current === this.right) return;
+    if (e.code === this.right && this.current === this.left) return;
+    if (e.code === this.down && this.current === this.up) return;
+    if (e.code === this.up && this.current === this.down) return;
+    this.current = e.code;
+  },
+};
+
+const move = {
+  speed: 10,
+  left() {
+    snake.body.forEach((body) => {
+      body.x -= this.speed;
+    });
+  },
+  right() {
+    snake.body.forEach((b) => {
+      if (b.y === snake.head().y) {
+        b.x += this.speed;
+      } else {
+        b.y += 10;
+      }
+    });
+  },
+  up() {
+    snake.body.forEach((b) => {
+      // body.y -= this.speed;
+      if (b.x === snake.head().x) {
+        b.y -= this.speed;
+      } else {
+        b.x += 10;
+      }
+    });
+  },
+  down() {
+    snake.body.forEach((b) => {
+      if (b.x === snake.head().x) {
+        b.y += this.speed;
+      } else {
+        b.x += 10;
+      }
+    });
+  },
+};
 
 const update = (time = 0) => {
   const deltaTime = time - lastTime;
@@ -62,24 +139,22 @@ const update = (time = 0) => {
   counter += deltaTime;
 
   if (counter > 100) {
-    counter = 0;
-    if (direction === "ArrowLeft") {
-      x -= speed;
-    } else if (direction === "ArrowRight") {
-      x += speed;
-    } else if (direction === "ArrowUp") {
-      y -= speed;
-    } else if (direction === "ArrowDown") {
-      y += speed;
+    draw();
+    if (direction.current === direction.left) {
+      move.left();
+    } else if (direction.current === direction.right) {
+      move.right();
+    } else if (direction.current === direction.up) {
+      move.up();
+    } else if (direction.current === direction.down) {
+      move.down();
     }
+    counter = 0;
   }
 
-  draw();
-
-  if (collided()) {
+  if (boundaryCollided()) {
     window.alert("Game Over.");
     reinit();
-    return;
   }
 
   requestAnimationFrame(update);
