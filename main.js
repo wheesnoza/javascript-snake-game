@@ -22,10 +22,10 @@ const food = {
 
 const snake = {
   body: [
-    { x: 30, y: 0 }, // head
-    { x: 20, y: 0 }, // head
-    { x: 10, y: 0 }, // middle body
-    { x: 0, y: 0 }, // tail
+    { x: 30, y: 0 },
+    { x: 20, y: 0 },
+    { x: 10, y: 0 },
+    { x: 0, y: 0 },
   ],
 
   tail() {
@@ -57,6 +57,12 @@ const snake = {
 };
 
 const drawSnake = () => {
+  [...snake.body].reverse().forEach((body, index, arr) => {
+    const next = arr[index + 1];
+    if (next === undefined) return;
+    body.x = next.x;
+    body.y = next.y;
+  });
   context.clearRect(0, 0, canvas.width, canvas.height);
   snake.body.forEach((body) => {
     context.fillStyle = "#7FFF00";
@@ -125,44 +131,16 @@ let direction = {
 const move = {
   speed: 10,
   left() {
-    snake.body.forEach((b) => {
-      if (b.y === snake.head().y) {
-        b.x -= this.speed;
-      } else {
-        if (direction.previous === direction.down) b.y += this.speed;
-        if (direction.previous === direction.up) b.y -= this.speed;
-      }
-    });
+    snake.head().x -= this.speed;
   },
   right() {
-    snake.body.forEach((b) => {
-      if (b.y === snake.head().y) {
-        b.x += this.speed;
-      } else {
-        if (direction.previous === direction.down) b.y += this.speed;
-        if (direction.previous === direction.up) b.y -= this.speed;
-      }
-    });
+    snake.head().x += this.speed;
   },
   up() {
-    snake.body.forEach((b) => {
-      if (b.x === snake.head().x) {
-        b.y -= this.speed;
-      } else {
-        if (direction.previous === direction.left) b.x -= this.speed;
-        if (direction.previous === direction.right) b.x += this.speed;
-      }
-    });
+    snake.head().y -= this.speed;
   },
   down() {
-    snake.body.forEach((b) => {
-      if (b.x === snake.head().x) {
-        b.y += this.speed;
-      } else {
-        if (direction.previous === direction.left) b.x -= this.speed;
-        if (direction.previous === direction.right) b.x += this.speed;
-      }
-    });
+    snake.head().y += this.speed;
   },
 };
 
@@ -172,7 +150,7 @@ const update = (time = 0) => {
 
   counter += deltaTime;
 
-  if (counter > 200) {
+  if (counter > 90) {
     draw();
     if (direction.current === direction.left) {
       move.left();
@@ -183,12 +161,12 @@ const update = (time = 0) => {
     } else if (direction.current === direction.down) {
       move.down();
     }
+
     counter = 0;
   }
 
   if (boundaryCollided()) {
     window.alert("Game Over.");
-    reinit();
   }
 
   requestAnimationFrame(update);
