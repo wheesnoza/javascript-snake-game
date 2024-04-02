@@ -8,7 +8,7 @@ let lastTime = 0;
 
 const random = () => {
   const numbers = [];
-  for (let i = 10; i <= 500; i += 10) {
+  for (let i = 10; i <= 400; i += 10) {
     numbers.push(i);
   }
 
@@ -22,6 +22,7 @@ const food = {
 
 const snake = {
   body: [
+    { x: 30, y: 0 }, // head
     { x: 20, y: 0 }, // head
     { x: 10, y: 0 }, // middle body
     { x: 0, y: 0 }, // tail
@@ -36,7 +37,18 @@ const snake = {
   },
 
   push() {
-    this.body.shift({ x: this.tail().x - 10, y: this.tail().y });
+    if (direction.current === direction.right) {
+      return this.body.push({ x: this.tail().x - 10, y: this.tail().y });
+    }
+    if (direction.current === direction.left) {
+      return this.body.push({ x: this.tail().x + 10, y: this.tail().y });
+    }
+    if (direction.current === direction.up) {
+      return this.body.push({ x: this.tail().x, y: this.tail().y + 10 });
+    }
+    if (direction.current === direction.down) {
+      return this.body.push({ x: this.tail().x, y: this.tail().y - 10 });
+    }
   },
 
   reset() {
@@ -60,8 +72,11 @@ const drawFood = () => {
 const draw = () => {
   drawSnake();
   drawFood();
+  if (selfCollied()) {
+  }
   if (foodCollided()) {
     snake.push();
+    console.log(snake.body);
     food.x = random();
     food.y = random();
   }
@@ -80,17 +95,29 @@ const foodCollided = () => {
   return snake.head().x === food.x && snake.head().y === food.y;
 };
 
+const selfCollied = () => {
+  snake.body.forEach((b) => {
+    if (b.x === snake.head().x && b.y === snake.head().y) {
+      return true;
+    }
+  });
+  return false;
+};
+
 let direction = {
   current: "ArrowRight",
+  previous: "",
   right: "ArrowRight",
   left: "ArrowLeft",
   up: "ArrowUp",
   down: "ArrowDown",
   update(e) {
+    if (direction.current === e.code) return;
     if (e.code === this.left && this.current === this.right) return;
     if (e.code === this.right && this.current === this.left) return;
     if (e.code === this.down && this.current === this.up) return;
     if (e.code === this.up && this.current === this.down) return;
+    this.previous = this.current;
     this.current = e.code;
   },
 };
@@ -98,8 +125,13 @@ let direction = {
 const move = {
   speed: 10,
   left() {
-    snake.body.forEach((body) => {
-      body.x -= this.speed;
+    snake.body.forEach((b) => {
+      if (b.y === snake.head().y) {
+        b.x -= this.speed;
+      } else {
+        if (direction.previous === direction.down) b.y += this.speed;
+        if (direction.previous === direction.up) b.y -= this.speed;
+      }
     });
   },
   right() {
@@ -107,17 +139,18 @@ const move = {
       if (b.y === snake.head().y) {
         b.x += this.speed;
       } else {
-        b.y += 10;
+        if (direction.previous === direction.down) b.y += this.speed;
+        if (direction.previous === direction.up) b.y -= this.speed;
       }
     });
   },
   up() {
     snake.body.forEach((b) => {
-      // body.y -= this.speed;
       if (b.x === snake.head().x) {
         b.y -= this.speed;
       } else {
-        b.x += 10;
+        if (direction.previous === direction.left) b.x -= this.speed;
+        if (direction.previous === direction.right) b.x += this.speed;
       }
     });
   },
@@ -126,7 +159,8 @@ const move = {
       if (b.x === snake.head().x) {
         b.y += this.speed;
       } else {
-        b.x += 10;
+        if (direction.previous === direction.left) b.x -= this.speed;
+        if (direction.previous === direction.right) b.x += this.speed;
       }
     });
   },
@@ -138,7 +172,7 @@ const update = (time = 0) => {
 
   counter += deltaTime;
 
-  if (counter > 100) {
+  if (counter > 200) {
     draw();
     if (direction.current === direction.left) {
       move.left();
