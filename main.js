@@ -1,10 +1,11 @@
 import "./style.css";
-
+const pointsH1 = document.getElementById("points");
 const canvas = document.querySelector("canvas");
 const context = canvas.getContext("2d");
 addEventListener("keydown", (e) => direction.update(e));
 let counter = 0;
 let lastTime = 0;
+let points = 0;
 
 const random = () => {
   const numbers = [];
@@ -21,12 +22,7 @@ const food = {
 };
 
 const snake = {
-  body: [
-    { x: 30, y: 0 },
-    { x: 20, y: 0 },
-    { x: 10, y: 0 },
-    { x: 0, y: 0 },
-  ],
+  body: [{ x: 0, y: 0 }],
 
   tail() {
     return this.body[this.body.length - 1];
@@ -52,7 +48,8 @@ const snake = {
   },
 
   reset() {
-    this.body = [];
+    this.body = [{ x: 0, y: 0 }];
+    console.log(this.body);
   },
 };
 
@@ -64,7 +61,7 @@ const drawSnake = () => {
     body.y = next.y;
   });
   context.clearRect(0, 0, canvas.width, canvas.height);
-  snake.body.forEach((body) => {
+  snake.body.forEach((body, index) => {
     context.fillStyle = "#7FFF00";
     context.fillRect(body.x, body.y, 10, 10);
   });
@@ -78,14 +75,6 @@ const drawFood = () => {
 const draw = () => {
   drawSnake();
   drawFood();
-  if (selfCollied()) {
-  }
-  if (foodCollided()) {
-    snake.push();
-    console.log(snake.body);
-    food.x = random();
-    food.y = random();
-  }
 };
 
 const boundaryCollided = () => {
@@ -102,12 +91,9 @@ const foodCollided = () => {
 };
 
 const selfCollied = () => {
-  snake.body.forEach((b) => {
-    if (b.x === snake.head().x && b.y === snake.head().y) {
-      return true;
-    }
+  return snake.body.slice(1).some((b) => {
+    return b.x === snake.head().x && b.y === snake.head().y;
   });
-  return false;
 };
 
 let direction = {
@@ -125,6 +111,10 @@ let direction = {
     if (e.code === this.up && this.current === this.down) return;
     this.previous = this.current;
     this.current = e.code;
+  },
+  reset() {
+    this.current = this.right;
+    this.previous = "";
   },
 };
 
@@ -151,6 +141,20 @@ const update = (time = 0) => {
   counter += deltaTime;
 
   if (counter > 90) {
+    if (boundaryCollided() || selfCollied()) {
+      window.alert("Game Over.");
+      snake.reset();
+      direction.reset();
+      points = 0;
+      pointsH1.textContent = points;
+    }
+    if (foodCollided()) {
+      snake.push();
+      food.x = random();
+      food.y = random();
+      points++;
+      pointsH1.textContent = points;
+    }
     draw();
     if (direction.current === direction.left) {
       move.left();
@@ -163,10 +167,6 @@ const update = (time = 0) => {
     }
 
     counter = 0;
-  }
-
-  if (boundaryCollided()) {
-    window.alert("Game Over.");
   }
 
   requestAnimationFrame(update);
